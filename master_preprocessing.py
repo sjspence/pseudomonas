@@ -139,6 +139,37 @@ def runRNAmmer(inDir, parallel):
     os.system('chmod +x ' + outFileName)
     os.system('cat ' + outFileName + ' | parallel -j ' + parallel)
 
+def checkSlash(directory):
+    if directory[-1] != '/':
+        directory = directory + '/'
+    return directory
+
+#Go through a contig directory and copy high completeness, low contamination
+#contigs to a fresh directory
+def cleanContigs(inDir, checkMfile, outDir):
+    inDir = checkSlash(inDir)
+    outDir = checkSlash(outDir)
+    checkFile = open(checkMfile, 'r')
+    badGenomes = set()
+    header = True
+    for line in checkFile:
+        if header:
+            header = False
+            continue
+        line = line.strip().split('\t')
+        sampID = line[0].replace('_contigs', '')
+        completeness = float(line[11])
+        contamination = float(line[12])
+        if (completeness < 95.0) or (contamination > 10.0):
+            badGenomes.add(sampID)
+    checkFile.close()
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
+        for f in os.listdir(inDir):
+            sampID = f.replace('_contigs.fna', '')
+            if sampID not in badGenomes:
+                os.system('cp ' + inDir + f + ' ' + outDir + f)
+
 def main():
     #dataDir = sys.argv[1]
     #
@@ -173,6 +204,12 @@ def main():
     inDir = '03_spades_q' + str(trimQ) + '/'
     parallel = 38
     #runRNAmmer(inDir, parallel)
+    #
+    ###CLEAN_CONTIGS
+    inDir = '03_spades_q' + str(trimQ) + '_contigs/'
+    checkMfile = '04_checkm_spades_q20/summary.txt'
+    outDir = '08_clean_contigs/'
+    #cleanContigs(inDir, checkMfile, outDir)
 
 if __name__ == "__main__":
     main()
