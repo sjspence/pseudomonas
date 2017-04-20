@@ -100,37 +100,53 @@ def maskAlignments(inDir, parallel):
     inDir = checkSlash(inDir)
     outFileName = inDir.replace('/', '_mask.sh')
     outFile = open(outFileName, 'w')
-    outFile.write('#!/bin/bash\n#Zorro masking commands\n\n')
+    outFile.write('#!/bin/bash\n#Gblocks masking commands\n\n')
     for f in os.listdir(inDir):
 	if '_pep_align.fa' in f:
-	    maskRaw = inDir + f.replace('_align.fa', '.mask_raw')
-	    outFile.write('zorro ' + inDir + f  + ' > ' + maskRaw + '\n')
+	    outPepFile = inDir + f.replace('.fa', '_simple.fa')
+	    outPep = open(outPepFile, 'w')
+	    with open(inDir + f, 'r') as inPep:
+		for line in inPep:
+		    if '>' in line:
+			outPep.write(line.split(' ')[0] + '\n')
+		    else:
+			outPep.write(line)
+	    outPep.close()
+	    outFile.write('Gblocks ' + outPepFile  + ' -t=p -b4=5\n')
     outFile.close()
     os.system('chmod +x ' + outFileName)
     os.system('cat ' + outFileName + ' | parallel --verbose -j ' + \
               str(parallel))
 
-def formatAlignments(inDir, parallel):
+def formatAlignments(inDir, outFile):
     inDir = checkSlash(inDir)
+    alignDict = {}
     for f in os.listdir(inDir):
-	pass
+	if '.fa-gb' == f[-6:]:
+	    records = list(SeqIO.parse(inDir + f, 'fasta'))
+	    for r in records:
+		if r.id in alignDict:
+		    alignDict[r.id] += r.seq
+		else:
+		    alignDict[r.id] = r.seq
+    outF = open(outFile, 'w')
+    for s in alignDict:
+	outF.write('>' + s + '\n')
+	outF.write(str(alignDict[s]) + '\n')
+    outF.close()
 
-def raxml(amphoraDir, parallel):
-    outFileName = amphoraDir.replace('/', '_raxml.sh')
-    outFile = open(outFileName, 'w')
-    outFile.write('#!/bin/bash\n#Amphora2 raxml alignment commands\n\n')
-    #Concatenate alignments
-    dnaG = []
-    for subdir, dirs, files in os.walk(amphoraDir):
-	for d in dirs:
-	    for f in os.listdir(amphoraDir + d):
-		if 'dnaG.aln' in f:
-		    alignments = AlignIO.read(open(amphoraDir + d + '/' + f, 'r'),
-				'phylip-relaxed')
-		    print(alignments.get_alignment_length())
-		    dnaG.append(alignments)
-    print(len(dnaG))
-    SeqIO.write(alignments, 'trial.phy', 'phylip-relaxed')
+def raxml(inFile, outFile, parallel):
+    #-m substitution model: LG, GTR
+    #-s name of alignment data file
+    #-p random number for parsimony: 2352890
+    #-n name of the output file
+    #raxmlHPC -f a -s alignment.fasta -m  PROTCATLGF -p 12945 -x 23899 -# 100 
+    #-n alignment.ML.tree
+    os.system('raxmlHPC -f a -m PROTCATLGF -s ' + inFile + \
+	      ' -p 12945 -x 23899 -# 100' + \
+	      ' -n ' + outFile)
+    #-T number of threads
+    #'-L MRE -z trees -n TEST')
 
 def main():
     ###CLEAN_CONTIGS
@@ -156,12 +172,14 @@ def main():
     #
     ###FORMAT_ALIGNMENTS
     inDir = '10_amphora_aligned/'
-    formatAlignments(inDir, parallel)
+    outFile = '10_amphora_aligned/concatenated_align.fa'
+    #formatAlignments(inDir, outFile)
     #
     ###BUILD_TREE
-    inDir = '09_amphora2/'
+    inFile = '10_amphora_aligned/concatenated_align.fa'
+    outFile = 'amphora.tree'
     parallel = 38
-    #raxml(amphoraDir, parallel)
+    raxml(inFile, outFile, parallel)
 
 if __name__ == "__main__":
     main()

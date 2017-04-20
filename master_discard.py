@@ -65,6 +65,21 @@ def getAmphoraDNA(contigDir, amphoraDir, parallel):
 #                   geneFile.write(line)
 #       geneFile.close()
 
+#Mask alignments
+def maskAlignments(inDir, parallel):
+    inDir = checkSlash(inDir)
+    outFileName = inDir.replace('/', '_mask.sh')
+    outFile = open(outFileName, 'w')
+    outFile.write('#!/bin/bash\n#Zorro masking commands\n\n')
+    for f in os.listdir(inDir):
+        if '_pep_align.fa' in f:
+            maskRaw = inDir + f.replace('_align.fa', '.mask_raw')
+            outFile.write('zorro ' + inDir + f  + ' > ' + maskRaw + '\n')
+    outFile.close()
+    os.system('chmod +x ' + outFileName)
+    os.system('cat ' + outFileName + ' | parallel --verbose -j ' + \
+              str(parallel))
+
 def main():
     ###AMPHORA_ALIGN
     inDir = '09_amphora2/'
@@ -76,6 +91,11 @@ def main():
     amphoraDir = '09_amphora2/'
     parallel = 38
     #getAmphoraDNA(contigDir, amphoraDir, parallel)
+    #
+    ###MASK_ALIGNMENTS
+    inDir = '10_amphora_aligned/'
+    #maskAlignments(inDir, parallel)
+    #
 
 if __name__ == "__main__":
     main()
