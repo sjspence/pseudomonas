@@ -3,6 +3,7 @@
 import os
 import shutil
 from Bio import SeqIO
+from Bio import AlignIO
 
 def checkSlash(directory):
     if directory[-1] != '/':
@@ -36,11 +37,12 @@ def runAmphora2(inDir, outDir, parallel):
     os.system('chmod +x ' + outFileName)
     os.system('cat ' + outFileName + ' | parallel -j ' + str(parallel))
 
-def alignProtein(amphoraDir, parallel):
+def alignProtein(amphoraDir, outDir, parallel):
     #Create multi-fasta peptide file for each marker gene that is present in
     #all clean genomes
     fxnalGenes = {}
     allCt = 0
+    amphoraDir = checkSlash(amphoraDir)
     #Collect all peptide files associated with an amphora gene
     for subdir, dirs, files in os.walk(amphoraDir):
 	for d in dirs:
@@ -55,15 +57,16 @@ def alignProtein(amphoraDir, parallel):
     #Check that the functional gene is in all genomes
     #Recover the longest representative sequence recovered by amphora2 for
     # each genome
+    outDir = checkSlash(outDir)
+    if not os.path.exists(outDir):
+	os.makedirs(outDir)
     for gene in fxnalGenes:
 	if len(fxnalGenes[gene]) != allCt:
 	    continue
-	#Consider that sometimes the files can have more than one seq
-	##records = list(SeqIO.parse(amphoraDir + gene + '_pep.fa', 'fasta'))
-	if len(records) == 1:
-	    pass
-	    ##SeqIO.write(records, amphoraDir + d + '/' + gene + '.pep', 'fasta')
-	else:
+	peptideList = []
+	for d in fxnalGenes[gene]:
+	    inPep = amphoraDir + d + '/' + gene + '.pep'
+	    records = list(SeqIO.parse(inPep, 'fasta'))
 	    maxLen = 0
 	    maxID = ''
 	    for r in records:
@@ -72,23 +75,45 @@ def alignProtein(amphoraDir, parallel):
 		    maxID = r.id
 	    for r in records:
 		if r.id == maxID:
-		    pass
-		    ##SeqIO.write(r, amphoraDir + d + '/' + gene + '.pep', 
-				#'fasta')
+		    r.id = d
+		    r.description = d + ' ' + r.description
+		    peptideList.append(r)
+	outPep = outDir + gene + '_pep.fa'
+	SeqIO.write(peptideList, outPep, 'fasta')
     #Align protein sequences with Muscle
     #Create executable file to run in parallel
     outFileName = amphoraDir.replace('/', '_alignProt.sh')
     outFile = open(outFileName, 'w')
     outFile.write('#!/bin/bash\n#Amphora2 protein alignment commands\n\n')
-    for f in os.listdir(amphoraDir):
+    for f in os.listdir(outDir):
 	if '_pep.fa' in f:
-	    outFile.write('muscle -in ' + amphoraDir + f + ' -fastaout ' + \
-			  amphoraDir + f.replace('_pep.fa', '_pep_align.fa') + \
+	    outFile.write('muscle -in ' + outDir + f + ' -fastaout ' + \
+			  outDir + f.replace('_pep.fa', '_pep_align.fa') + \
 			  '\n')
     outFile.close()
     os.system('chmod +x ' + outFileName)
-    #os.system('cat ' + outFileName + ' | parallel --verbose -j ' + \
-    #          str(parallel))
+    os.system('cat ' + outFileName + ' | parallel --verbose -j ' + \
+              str(parallel))
+
+#Mask alignments
+def maskAlignments(inDir, parallel):
+    inDir = checkSlash(inDir)
+    outFileName = inDir.replace('/', '_mask.sh')
+    outFile = open(outFileName, 'w')
+    outFile.write('#!/bin/bash\n#Zorro masking commands\n\n')
+    for f in os.listdir(inDir):
+	if '_pep_align.fa' in f:
+	    maskRaw = inDir + f.replace('_align.fa', '.mask_raw')
+	    outFile.write('zorro ' + inDir + f  + ' > ' + maskRaw + '\n')
+    outFile.close()
+    os.system('chmod +x ' + outFileName)
+    os.system('cat ' + outFileName + ' | parallel --verbose -j ' + \
+              str(parallel))
+
+def formatAlignments(inDir, parallel):
+    inDir = checkSlash(inDir)
+    for f in os.listdir(inDir):
+	pass
 
 def raxml(amphoraDir, parallel):
     outFileName = amphoraDir.replace('/', '_raxml.sh')
@@ -121,12 +146,20 @@ def main():
     #runAmphora2(inDir, outDir, parallel)
     #
     ###ALIGN_PROTEIN
-    inDir = 
-    outDir = 
-    alignProtein(amphoraDir, parallel)
+    inDir = '09_amphora2/'
+    outDir = '10_amphora_aligned/'
+    #alignProtein(inDir, outDir, parallel)
+    #
+    ###MASK_ALIGNMENTS
+    inDir = '10_amphora_aligned/'
+    #maskAlignments(inDir, parallel)
+    #
+    ###FORMAT_ALIGNMENTS
+    inDir = '10_amphora_aligned/'
+    formatAlignments(inDir, parallel)
     #
     ###BUILD_TREE
-    amphoraDir = '09_amphora2/'
+    inDir = '09_amphora2/'
     parallel = 38
     #raxml(amphoraDir, parallel)
 
