@@ -129,13 +129,10 @@ def curateDirectories():
     makeCuratedDir('subN/', subN)
     makeCuratedDir('subO/', subO)
 
-def XparsnpSub(subGroup, threads):
-    #mumiMax = str(mumiMax)
-    outDir = '/home/ubuntu/proc/sjspence/170105_PSE/11_parsnp_subgroups/' + \
-	 subGroup + '/'
+def parsnpMUMI(inDir, mumiMax, outDir, threads):
+    mumiMax = str(mumiMax)
     if not os.path.exists(outDir):
 	os.makedirs(outDir)
-    curatedDir = '10_subgroups/' + subGroup + '/'
 #    fileDir = '/home/ubuntu/proc/sjspence/170105_PSE/10_pseudo_edited/'
 #    if not os.path.exists(fileDir):
 #	os.makedirs(fileDir)
@@ -155,8 +152,8 @@ def XparsnpSub(subGroup, threads):
     #os.system('parsnp -r ' + genomeDir + reference + '_contigs.fa -d ' + \
 #		genomeDir + ' -U ' + mumiMax + ' -p ' + str(threads) + \
 #		' -o ' + outDir)
-    os.system('parsnp -r ! -d ' + \
-		curatedDir + ' -c -p ' + str(threads) + \
+    os.system('parsnp -r ! -d ' + inDir + ' -U ' + mumiMax + \
+		' -c -p ' + str(threads) + \
 		' -o ' + outDir)
 
 def parsnpSub(inDir, outDir, threads, parallel):
@@ -182,23 +179,68 @@ def parsnpDefault(reference, inDir, outDir, threads):
     os.system('parsnp -r ' + reference + ' -d ' + inDir + ' -p ' + threads + \
 	      ' -o ' + outDir)
 
+def runBreseq(inDir, parsnpDir, prokkaDir, fastqDir, outDir, threads, parallel):
+    #Identify references used in parsnp alignments
+    refDict = {} #subA: D17-102...
+    for subdir, dirs, files in os.walk(parsnpDir):
+	for d in dirs:
+	    for f in os.listdir(parsnpDir + d):
+		if '.xmfa' in f:
+		     with open(parsnpDir + d + '/' + f, 'r') as inFile:
+			for i in range(50):
+			    line = inFile.next()
+			    if '_contigs.fa.ref' in line:
+				line = line.strip().split(' ')[1]
+				refID = line.replace('_contigs.fa.ref', '')
+				refDict[d] = refID
+    #Select reference gbk file (output of prokka)
+    refFileDict = {} #subA: reference file name
+    for ref in refDict:
+	for subdir, dirs, files in os.walk(prokkaDir):
+	    for d in dirs:
+		if refDict[ref] == d:
+		     refFileDict[ref] = prokkaDir + d + '/' + d + '.gbk'
+    print(refFileDict)
+    #Open .sh file and start writing
+    outFileName = outDir.replace('/', '.sh')
+    outFile = open(outFileName, 'w')
+    #START HEREEEE
+    #Add lines for different fastq directories
+
 def main():
     #getPseudos()
     #runMugsy()
     #runProkka()
     #curateDirectories()
     #
+    #ALIGN_ALL
+    inDir = '08_pseudo_contigs'
+    mumiMax = 0.7
+    outDir = '10_parsnp_U0.7'
+    threads = 38
+    parsnpMUMI(inDir, mumiMax, outDir, threads)
+    #
     #ALIGN_GENOMES
     inDir = '10_subgroups'
     outDir = '11_parsnp_subgroups'
     threads = 3
     parallel = 13
-    parsnpSub(inDir, outDir, threads, parallel)
+    #parsnpSub(inDir, outDir, threads, parallel)
     #
     reference = '08_pseudo_contigs/D17-102043_contigs.fa'
     inDir = '08_pseudo_contigs/'
     outDir = '10_parsnp_' + reference + '_default/'
     #parsnpDefault(reference, inDir, outDir, threads)
+    #
+    #BRESEQ
+    inDir = '10_subgroups/'
+    parsnpDir = '11_parsnp_subgroups/'
+    prokkaDir = '09_prokka/'
+    fastqDir = '02_trimmomatic_q20/'
+    outDir = '11_breseq_subgroups/'
+    threads = 3
+    parallel = 13
+    #runBreseq(inDir, parsnpDir, prokkaDir, fastqDir, outDir, threads, parallel)
 
 if __name__ == "__main__":
     main()

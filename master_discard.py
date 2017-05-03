@@ -90,7 +90,7 @@ def main():
     contigDir = '08_all_clean_contigs/'
     amphoraDir = '09_amphora2/'
     parallel = 38
-    #getAmphoraDNA(contigDir, amphoraDir, parallel)
+    getAmphoraDNA(contigDir, amphoraDir, parallel)
     #
     ###MASK_ALIGNMENTS
     inDir = '10_amphora_aligned/'
