@@ -38,6 +38,18 @@ def runAligner(readDir, scaffoldDir, outDir, parallel):
     os.system('chmod +x ' + outFileName)
     os.system('cat ' + outFileName + ' | parallel -j ' + str(parallel))
 
+def runUnzip(bwaDir, parallel):
+    outFileName = bwaDir[0:len(bwaDir)-1] + '_unzip.sh'
+    outFileName = outFileName.replace('/', '_')
+    outFile = open(outFileName, 'w')
+    outFile.write('#!/bin/bash\n#Unzipping commands\n\n')
+    for f in os.listdir(bwaDir):
+	outFile.write('gunzip ' + bwaDir + f + '\n')
+    outFile.close()
+    os.system('chmod +x ' + outFileName)
+    os.system('cat ' + outFileName + ' | parallel -j ' + str(parallel))
+    os.system('rm ' + outFileName)
+
 def main():
     #####
     #IDENTIFY SUBGROUPS
@@ -72,10 +84,13 @@ def main():
         #outDir = '11_bwa/subC/'
 	scaffoldDir = subDir + s + '/'
 	outDir = bwaOut + s + '/'
-	print('Aligning reads to contigs in subgroup: ' + s)
-        runAligner(readDir, scaffoldDir, outDir, parallel)
+	#print('Aligning reads to contigs in subgroup: ' + s)
+        #runAligner(readDir, scaffoldDir, outDir, parallel)
     #####
     #UNZIP
+    for s in subGroups:
+	bwaDir =  bwaOut + s + '/'
+	runUnzip(bwaDir, parallel)
 
 if __name__ == '__main__':
     main()
