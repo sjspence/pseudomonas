@@ -97,5 +97,34 @@ def main():
     #maskAlignments(inDir, parallel)
     #
 
+
+ctlName = 'baseml.ctl'
+ctl = open(ctlName, 'r')
+ctlOut = open(snpDir + subDir + ctlName, 'w')
+#Files to access
+variantFile = coreDir + snpDir + subDir + 'variants.mfa'
+treeFile = coreDir + snpDir + subDir + 'parsnp.tree'
+outFile = coreDir + snpDir + subDir + 'mlb'
+for line in ctl:
+    lineList = line.strip().split(' ')
+    if lineList[0] == 'seqfile':
+        ctlOut.write(line.replace(lineList[2], variantFile))
+    elif lineList[0] == 'treefile':
+        ctlOut.write(line.replace(lineList[2], treeFile))
+    elif lineList[0] == 'outfile':
+        ctlOut.write(line.replace(lineList[2], outFile))
+    elif lineList[0] == 'model':
+        ctlOut.write(line.replace(lineList[2], '0')) #Jukes-cantor 69
+    elif lineList[0] == 'RateAncestor':
+        ctlOut.write(line.replace(lineList[2], '1'))
+#    elif lineList[0] == 'nhomo':
+#        ctlOut.write('* ' + line)
+    else:
+        ctlOut.write(line)
+ctl.close()
+ctlOut.close()
+
+os.system('baseml ' + snpDir + subDir + ctlName)
+
 if __name__ == "__main__":
     main()
