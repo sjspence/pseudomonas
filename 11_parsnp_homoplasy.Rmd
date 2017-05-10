@@ -54,7 +54,6 @@ plotPDF <- function(homoplasyFile) {
   reverseTips <- rev(gsub("-", "_", tree$tip.label))
   sapply(reverseTips, function(x) {
     if (x %in% names(y)) {
-      print('yes')
       current <- get(x, y)
       if (identical(current, character(0))) {
         plot(1:2, 1:2, xlim=c(0, 7e6), axes=F, col="white")
