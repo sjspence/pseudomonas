@@ -1,0 +1,88 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(ape)
+library(phytools)
+```
+
+```{r}
+homoplasyDir <- '12_homoplasies/'
+file.names <- dir(homoplasyDir, pattern =".txt")
+sapply(file.names, function(x) {
+  plotPDF(paste(homoplasyDir, x, sep=""))
+})
+```
+
+```{r, fig.width = 7, fig.height = 10}
+
+plotPDF <- function(homoplasyFile) {
+  #INITIAL DATA IMPORT
+  #homoplasyFile <- '12_homoplasies/subA_homoplasies.txt'
+  #tree <- read.tree('11_parsnp_subgroups_snps/subA/parsnp_edit.tree')
+
+  x <- scan(homoplasyFile, what="", sep="\n")
+  y <- strsplit(x, ",")
+  names(y) <- sapply(y, `[[`, 1)
+  y <- lapply(y, `[`, -1)
+  
+  treeFile1 <- gsub('12_homoplasies', '11_parsnp_subgroups_snps', homoplasyFile)
+  treeFile <- gsub('_homoplasies.txt', '/parsnp_edit.tree', treeFile1)
+  tree <- read.tree(treeFile)
+  
+  #SETUP OUTPUT PDF FILE
+  outFile <- gsub("homoplasies.txt", "homoplasies.pdf", homoplasyFile)
+  pdf(outFile, width=7, height=10, paper='special')
+  
+  #SETUP LAYOUT MATRIX
+  numRows <- length(y)
+  treeplot <- rep(1, numRows)
+  subplots <- c(1:numRows+1)
+  subplot.matrix <- cbind(treeplot, subplots)
+  par(mar = c(0,0,0,0))
+  layout(subplot.matrix, widths=c(1,3))
+  
+  #GET CORRECT ORDER OF TIPS FOR PLOTTING DATA ALONGSIDE
+  plot(tree)
+  reverseTips <- rev(gsub("-", "_", tree$tip.label))
+  sapply(reverseTips, function(x) {
+    if (x %in% names(y)) {
+      print('yes')
+      current <- get(x, y)
+      if (identical(current, character(0))) {
+        plot(1:2, 1:2, xlim=c(0, 7e6), axes=F, col="white")
+      }
+      else {
+        plot(current, integer(length(current)), xlim=c(0, 7e6), axes=F)        
+      }
+    }
+    else {
+      plot(1:2, 1:2, xlim=c(0, 7e6), axes=F, col="white")
+    }
+  })
+  dev.off()
+}
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+
+
+
+
+
+
+
+
+
+
