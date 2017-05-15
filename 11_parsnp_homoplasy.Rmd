@@ -14,6 +14,11 @@ library(phytools)
 ```
 
 ```{r}
+setwd('/home/ubuntu/proc/sjspence/170105_PSE')
+last <- function(x) { return( x[length(x)] ) }
+```
+
+```{r}
 homoplasyDir <- '12_homoplasies/'
 file.names <- dir(homoplasyDir, pattern =".txt")
 sapply(file.names, function(x) {
@@ -46,24 +51,32 @@ plotPDF <- function(homoplasyFile) {
   treeplot <- rep(1, numRows)
   subplots <- c(1:numRows+1)
   subplot.matrix <- cbind(treeplot, subplots)
-  par(mar = c(0,0,0,0))
+  #par(mar = c(0,0,0,0))
   layout(subplot.matrix, widths=c(1,3))
   
   #GET CORRECT ORDER OF TIPS FOR PLOTTING DATA ALONGSIDE
+  par(mar = c(0,0,0,2), xpd = NA)
   plot(tree)
+  par(mar = c(0,1,0,0), xpd = FALSE)
   reverseTips <- rev(gsub("-", "_", tree$tip.label))
   sapply(reverseTips, function(x) {
+    #Now plot
     if (x %in% names(y)) {
       current <- get(x, y)
       if (identical(current, character(0))) {
         plot(1:2, 1:2, xlim=c(0, 7e6), axes=F, col="white")
       }
       else {
-        plot(current, integer(length(current)), xlim=c(0, 7e6), axes=F)        
+        plot(current, integer(length(current)), xlim=c(0, 7e6), axes=F)
       }
     }
     else {
       plot(1:2, 1:2, xlim=c(0, 7e6), axes=F, col="white")
+    }
+    #If last element, plot axis
+    if (x == last(reverseTips)) {
+      par(mar = c(2,1,0,0))
+      axis(1)
     }
   })
   dev.off()
