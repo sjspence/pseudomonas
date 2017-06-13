@@ -19,8 +19,9 @@ def runUnmapped(inDir, outDir, parallel):
 def main():
     ####
     #ASSESS UNMAPPED
-    inDir = '11_bwa/subA/'
-    outDir = '12_bwa_unmapped/subA/'
+    subgroup = 'subJ/'
+    inDir = '11_bwa/' + subgroup
+    outDir = '12_bwa_unmapped/' + subgroup
     parallel = 17
     runUnmapped(inDir, outDir, parallel)
 
