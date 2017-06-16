@@ -19,7 +19,6 @@ def parse_args(arg_lst):
                         help="The number of accessions to process per request")
     parser.add_argument("-o", "--output_dir", type=str, required=True,
                         help="The directory to write downloaded files to")
-
     return parser.parse_args(arg_lst)
 
 def read_accessions(fp):
@@ -34,10 +33,10 @@ def accessions_to_gb(accessions, db, batchsize, retmax):
 
     def extract_records(records_handle):
         buffer = []
-        for line in records_handle:
+	for line in records_handle:
             if line.startswith("LOCUS") and buffer:
                 # yield accession number and record
-                yield buffer[0].split()[1], "".join(buffer)
+                yield buffer[0].split()[1].split('.')[0], "".join(buffer)
                 buffer = [line]
             else:
                 buffer.append(line)
@@ -80,7 +79,6 @@ def main(argv):
     dbase = args.database
     Bio.Entrez.email = args.email
     batchsize = args.batch
-
     for acc, record in accessions_to_gb(accessions, dbase, batchsize, RETMAX):
         write_record(op_dir, acc, record)
 
