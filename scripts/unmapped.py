@@ -41,7 +41,7 @@ def binaryMapping(mappedID, unmapped):
     df = df.loc[(df.sum(axis=1) != len(df.columns))]
     df['sequence'] = ''
     for i in list(df.index):
-        df['sequence'][i] = unmappedSeqs[i]
+        df.loc[i, 'sequence'] = unmappedSeqs[i]
     return df
 
 def main():

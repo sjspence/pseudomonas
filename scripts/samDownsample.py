@@ -5,8 +5,11 @@ import pandas as pd
 
 def downsampleSam(samFileName, diffFileName, outFileName):
     #Prep differentially mapped reads to look for
-    annoDf = pd.DataFrame.from_csv(diffFileName, sep = '\t')
-    readFwdRevSet = set(annoDf.index)
+    readFwdRevSet = set()
+    diffFile = open(diffFileName, 'r')
+    for line in diffFile:
+	readFwdRevSet.add(line.strip())
+    diffFile.close()
     readSet = set()
     for i in readFwdRevSet:
         readSet.add(i.split('__')[0])
@@ -30,14 +33,13 @@ def downsampleSam(samFileName, diffFileName, outFileName):
     samFile.close()
     outFile.close()
 
-
 def main():
     parser = OptionParser()
     parser.add_option("-s", "--samfile", dest="s",
                       help="SAM file.",
                       metavar="SAM")
     parser.add_option("-d", "--difffile", dest="d",
-		      help="File with differentially mapped panda indices.",
+		      help="File with differentially mapped reads.",
 		      metavar="DIFF")
     parser.add_option("-o", "--output", dest="o",
                       help="Output filtered SAM file.",
